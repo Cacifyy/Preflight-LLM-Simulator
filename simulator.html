@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pipeline Simulator — PreFlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── THEME TOKENS ── */
+[data-theme="dark"]{
+  --bg:#0f1117;--bg2:#13161e;--surface:#1a1d27;--surface2:#21253200;--surface3:#282d3d;
+  --border:#2a2f40;--border2:#363d52;
+  --text:#e8e6df;--text2:#9b97a0;--text3:#545063;
+  --accent:#7eb8a4;--accent-dim:#5d9988;--accent-text:#c8ece3;
+  --shadow:rgba(0,0,0,.4);
+  --canvas-bg:#0c0e14;--canvas-dot:#1e2230;
+  --node-bg:#1a1d27;--node-border:#2a2f40;
+}
+[data-theme="light"]{
+  --bg:#f5f3ee;--bg2:#edeae3;--surface:#ffffff;--surface2:#f0ede6;--surface3:#e8e4db;
+  --border:#d8d3c8;--border2:#c4bfb4;
+  --text:#1e1c18;--text2:#6b6560;--text3:#a09a92;
+  --accent:#4a8f7a;--accent-dim:#3a7262;--accent-text:#2a5f50;
+  --shadow:rgba(0,0,0,.1);
+  --canvas-bg:#ebe8e1;--canvas-dot:#d0ccc4;
+  --node-bg:#ffffff;--node-border:#d8d3c8;
+}
+
+/* ── CATEGORY COLORS (same in both themes) ── */
+:root{
+  --c-retrieval:#5b8dee;
+  --c-logic:#4ecdc4;
+  --c-model:#f6a740;
+  --c-infra:#9b7fe8;
+  --c-database:#e8607a;
+  --c-custom:#78b97a;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Syne',sans-serif;
+}
+
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);display:flex;flex-direction:column;transition:background .2s,color .2s}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── NAV ── */
+nav{height:48px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;z-index:100;}
+.nav-logo{font-family:var(--sans);font-weight:800;font-size:16px;color:var(--accent);text-decoration:none;letter-spacing:-.02em}
+.nav-back{font-size:11px;color:var(--text3);text-decoration:none;transition:color .15s;display:flex;align-items:center;gap:5px;}
+.nav-back:hover{color:var(--text2)}
+.nav-sep{color:var(--border2);font-size:14px}
+.nav-title{font-size:12px;color:var(--text2)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.nav-btn{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:4px;
+  border:1px solid var(--border2);background:transparent;color:var(--text2);
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px;}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+.nav-btn.primary:hover{background:var(--accent-dim)}
+.theme-toggle{width:32px;height:32px;border-radius:6px;border:1px solid var(--border2);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sidebar-tab{flex:1;padding:8px 4px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text3);cursor:pointer;text-align:center;border:none;background:transparent;
+  border-bottom:2px solid transparent;transition:all .15s;font-family:var(--mono);}
+.sidebar-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.sidebar-tab:hover:not(.active){color:var(--text2)}
+.sidebar-panel{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+.sidebar-panel.active{display:flex}
+.sidebar-section{padding:10px 10px 8px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+
+/* ── NODE CHIPS ── */
+.node-chip{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:6px;
+  border:1px solid var(--border);background:var(--surface2);margin-bottom:4px;
+  cursor:grab;user-select:none;transition:all .15s;position:relative;}
+.node-chip:hover{border-color:var(--accent);background:var(--surface3);transform:translateX(2px)}
+.node-chip:active{cursor:grabbing}
+.chip-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.chip-name{font-size:11px;font-weight:500;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chip-lat{font-size:10px;color:var(--text3);display:block;margin-top:1px}
+.chip-edit,.chip-del{position:absolute;top:50%;transform:translateY(-50%);font-size:10px;
+  color:var(--text3);cursor:pointer;opacity:0;transition:opacity .1s;padding:2px 3px;}
+.chip-edit{right:24px}.chip-del{right:5px}
+.node-chip:hover .chip-edit,.node-chip:hover .chip-del{opacity:1}
+.chip-edit:hover{color:var(--accent)}.chip-del:hover{color:var(--c-database)}
+.add-custom-btn{display:flex;align-items:center;gap:6px;width:100%;padding:7px 10px;
+  border:1px dashed var(--border2);background:transparent;color:var(--text3);
+  font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;
+  margin-top:4px;border-radius:6px;}
+.add-custom-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── MODEL TAB ── */
+.model-search-wrap{padding:10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.model-search{width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:5px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:11px;
+  outline:none;transition:border-color .15s;}
+.model-search:focus{border-color:var(--accent)}
+.model-search::placeholder{color:var(--text3)}
+.model-list{flex:1;overflow-y:auto;}
+.model-provider-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);
+  padding:8px 10px 4px;position:sticky;top:0;background:var(--surface);z-index:1;}
+.model-chip{display:flex;flex-direction:column;gap:5px;padding:8px 10px;cursor:grab;
+  user-select:none;border-bottom:1px solid var(--border);transition:background .12s;}
+.model-chip:hover{background:var(--surface2)}
+.model-chip:active{cursor:grabbing}
+.model-chip-header{display:flex;align-items:center;gap:7px;}
+.model-chip-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.model-chip-name{font-size:11px;font-weight:500;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.model-chip-badges{display:flex;gap:4px;flex-wrap:wrap;padding-left:14px;}
+.model-badge{font-size:9px;padding:2px 5px;border-radius:3px;font-family:var(--mono);}
+
+/* ── CANVAS ── */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--canvas-bg);}
+.canvas-bg{position:absolute;inset:0;
+  background-image:radial-gradient(circle,var(--canvas-dot) 1px,transparent 1px);
+  background-size:28px 28px;opacity:1;
+  transform-origin:0 0;pointer-events:none;}
+.canvas-transform{position:absolute;inset:0;transform-origin:0 0;}
+svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
+.canvas-nodes{position:absolute;inset:0;}
+
+.sim-toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:5px;background:var(--surface);border:1px solid var(--border2);
+  border-radius:8px;padding:5px 8px;box-shadow:0 4px 16px var(--shadow);}
+.tool-btn{font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:4px;
+  border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tool-btn.run{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+.tool-btn.run:hover{background:var(--accent-dim)}
+.zoom-display{font-size:10px;color:var(--text3);padding:5px 8px;border-left:1px solid var(--border);margin-left:2px;}
+
+.empty-hint{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;pointer-events:none;}
+.empty-hint p{font-size:12px;color:var(--text3);line-height:1.7;text-align:center;}
+
+/* ── PIPELINE NODES ── */
+.pnode{position:absolute;background:var(--node-bg);border:1px solid var(--node-border);
+  border-radius:8px;padding:10px 14px 10px 10px;cursor:move;user-select:none;
+  min-width:155px;transition:border-color .15s,box-shadow .15s;
+  box-shadow:0 2px 8px var(--shadow);}
+.pnode:hover{border-color:var(--border2);box-shadow:0 4px 16px var(--shadow)}
+.pnode.selected{box-shadow:0 0 0 2px var(--accent),0 4px 16px var(--shadow)}
+.pnode-cat-bar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:8px 0 0 8px;}
+.pnode-header{display:flex;align-items:center;gap:7px;margin-bottom:3px;padding-left:8px;}
+.pnode-name{font-size:12px;font-weight:500;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pnode-meta{font-size:10px;color:var(--text3);padding-left:8px;}
+.pnode-actions{position:absolute;top:4px;right:5px;display:flex;gap:2px;opacity:0;transition:opacity .1s;}
+.pnode:hover .pnode-actions{opacity:1}
+.pnode-btn{font-size:10px;color:var(--text3);cursor:pointer;padding:2px 4px;line-height:1;
+  border-radius:3px;transition:color .1s,background .1s;}
+.pnode-btn:hover{color:var(--accent);background:var(--surface2)}
+.pnode-btn.del:hover{color:var(--c-database)}
+.port{width:10px;height:10px;border-radius:50%;border:2px solid var(--border2);
+  background:var(--surface);position:absolute;cursor:crosshair;transition:all .15s;}
+.port:hover{border-color:var(--accent);background:var(--accent);transform:scale(1.4)!important}
+.port-out{right:-6px;top:50%;transform:translateY(-50%)}
+.port-in{left:-6px;top:50%;transform:translateY(-50%)}
+
+/* ── STATS PANEL ── */
+.stats-panel{width:245px;background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;}
+.stats-hd{padding:12px 14px;border-bottom:1px solid var(--border);font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;}
+.pct-selector{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border);}
+.pct-pill{font-size:10px;font-family:var(--mono);padding:3px 8px;border-radius:10px;
+  border:1px solid var(--border2);cursor:pointer;transition:all .15s;color:var(--text3);
+  background:transparent;user-select:none;}
+.pct-pill.active{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+.pct-pill:hover:not(.active){border-color:var(--text3);color:var(--text2)}
+.stats-body{padding:12px;flex:1;overflow-y:auto;}
+.stat-group-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);
+  margin:14px 0 6px;display:flex;align-items:center;gap:6px;}
+.stat-group-title:first-child{margin-top:0}
+.stat-group-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.stat-row{display:flex;justify-content:space-between;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid var(--border);}
+.stat-lbl{font-size:11px;color:var(--text3)}.stat-val{font-size:13px;font-weight:500;color:var(--accent)}
+.stat-val.warn{color:#e8a04a}.stat-val.bad{color:var(--c-database)}
+.stats-empty{font-size:11px;color:var(--text3);line-height:1.8;}
+
+/* ── BOTTLENECK ── */
+.bottleneck-box{border-radius:6px;padding:10px 12px;margin-top:8px;
+  border-left:3px solid var(--c-database);background:var(--surface2);}
+.bn-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.bn-icon{font-size:12px}
+.bn-title{font-size:10px;font-weight:500;color:var(--c-database);letter-spacing:.05em}
+.bn-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px}
+.bn-impact{font-size:10px;color:var(--text2);line-height:1.6;margin-bottom:6px;
+  padding:4px 6px;background:var(--surface3);border-radius:4px;}
+.bn-fix-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:3px;}
+.bn-fix{font-size:11px;color:var(--text2);line-height:1.6;}
+.bn-fix li{margin-left:14px;margin-bottom:2px;}
+.node-detail{background:var(--surface2);border:1px solid var(--border);border-radius:5px;
+  padding:8px 10px;margin-top:8px;}
+.nd-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;
+  border-bottom:1px solid var(--border);}
+.nd-row:last-child{border-bottom:none}
+.nd-key{color:var(--text3)}.nd-val{color:var(--text)}
+
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+  padding:24px;width:380px;max-width:92vw;max-height:88vh;overflow-y:auto;
+  transform:translateY(8px);transition:transform .2s;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-title{font-family:var(--sans);font-weight:700;font-size:16px;color:var(--text);margin-bottom:2px;}
+.modal-sub{font-size:11px;color:var(--text3);margin-bottom:16px;}
+.form-row{margin-bottom:12px}
+.form-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);
+  display:block;margin-bottom:5px;}
+.form-input{width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:5px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:12px;
+  outline:none;transition:border-color .15s;}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text3)}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.color-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.color-swatch{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all .1s;}
+.color-swatch:hover{transform:scale(1.15)}.color-swatch.selected{border-color:var(--text)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.modal-btn{font-family:var(--mono);font-size:12px;padding:8px 18px;border-radius:4px;
+  cursor:pointer;border:1px solid;transition:all .15s;}
+.modal-btn.cancel{background:transparent;color:var(--text3);border-color:var(--border2)}
+.modal-btn.cancel:hover{color:var(--text);border-color:var(--text3)}
+.modal-btn.save{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+.modal-btn.save:hover{background:var(--accent-dim)}
+.modal-error{font-size:11px;color:var(--c-database);margin-top:6px;min-height:14px;}
+.modal-divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.form-hint{font-size:10px;color:var(--text3);margin-top:3px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">PreFlight</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-title">Pipeline Simulator</span>
+  <div class="nav-right">
+    <label style="font-size:10px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:6px">
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)"/>
+      <button class="nav-btn" onclick="document.getElementById('importFile').click()">↑ Import</button>
+    </label>
+    <button class="nav-btn" onclick="exportJSON()">↓ Export JSON</button>
+    <button class="nav-btn primary" onclick="exportPNG()">⤓ Export PNG</button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle light/dark">◐</button>
+  </div>
+</nav>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" onclick="switchTab('nodes',this)">Nodes</button>
+      <button class="sidebar-tab" onclick="switchTab('models',this)">Models</button>
+      <button class="sidebar-tab" onclick="switchTab('infra',this)">Infra</button>
+    </div>
+
+    <!-- NODES TAB -->
+    <div class="sidebar-panel active" id="tab-nodes">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Retrieval</div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'vector_db')">
+          <div class="chip-dot" style="background:var(--c-retrieval)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Vector DB</span><span class="chip-lat" id="clat_vector_db">p50 40ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'vector_db')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'reranker')">
+          <div class="chip-dot" style="background:var(--c-retrieval)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Reranker</span><span class="chip-lat" id="clat_reranker">p50 80ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'reranker')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'cache')">
+          <div class="chip-dot" style="background:var(--c-retrieval)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Cache</span><span class="chip-lat" id="clat_cache">p50 2ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'cache')">✎</span>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Logic</div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'embed')">
+          <div class="chip-dot" style="background:var(--c-logic)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Embedder</span><span class="chip-lat" id="clat_embed">p50 20ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'embed')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'router')">
+          <div class="chip-dot" style="background:var(--c-logic)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Router</span><span class="chip-lat" id="clat_router">p50 5ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'router')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'guardrail')">
+          <div class="chip-dot" style="background:var(--c-logic)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Guardrail</span><span class="chip-lat" id="clat_guardrail">p50 60ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'guardrail')">✎</span>
+        </div>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;flex:1">
+        <div class="sidebar-label">Custom</div>
+        <div id="customChips"></div>
+        <button class="add-custom-btn" onclick="openCreateModal()">+ New node</button>
+      </div>
+    </div>
+
+    <!-- MODELS TAB -->
+    <div class="sidebar-panel" id="tab-models">
+      <div class="model-search-wrap">
+        <input class="model-search" id="modelSearch" placeholder="Search models…" oninput="filterModels(this.value)"/>
+      </div>
+      <div class="model-list" id="modelList"></div>
+    </div>
+
+    <!-- INFRA TAB -->
+    <div class="sidebar-panel" id="tab-infra">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Serverless</div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'vercel')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Vercel</span><span class="chip-lat" id="clat_vercel">cold ~800ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'vercel')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'aws_lambda')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">AWS Lambda</span><span class="chip-lat" id="clat_aws_lambda">cold ~500ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'aws_lambda')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'cf_workers')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">CF Workers</span><span class="chip-lat" id="clat_cf_workers">cold ~5ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'cf_workers')">✎</span>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Containers</div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'railway')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Railway</span><span class="chip-lat" id="clat_railway">warm ~2ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'railway')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'fly_io')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Fly.io</span><span class="chip-lat" id="clat_fly_io">warm ~3ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'fly_io')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'gcp_run')">
+          <div class="chip-dot" style="background:var(--c-infra)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Cloud Run</span><span class="chip-lat" id="clat_gcp_run">cold ~2s</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'gcp_run')">✎</span>
+        </div>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none">
+        <div class="sidebar-label">Databases</div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'postgres')">
+          <div class="chip-dot" style="background:var(--c-database)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Postgres</span><span class="chip-lat" id="clat_postgres">p50 5ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'postgres')">✎</span>
+        </div>
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'redis')">
+          <div class="chip-dot" style="background:var(--c-database)"></div>
+          <div style="flex:1;min-width:0"><span class="chip-name">Redis</span><span class="chip-lat" id="clat_redis">p50 1ms</span></div>
+          <span class="chip-edit" onclick="openEditChip(event,'redis')">✎</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap" id="canvasWrap"
+    ondragover="event.preventDefault()" ondrop="dropNode(event)"
+    onwheel="onWheel(event)" onmousedown="onCanvasMouseDown(event)">
+    <div class="canvas-bg" id="canvasBg"></div>
+    <div class="canvas-transform" id="canvasTransform">
+      <svg class="edges-svg" id="edgesSvg" style="width:4000px;height:4000px"></svg>
+      <div class="canvas-nodes" id="canvasNodes"></div>
+    </div>
+    <div class="empty-hint" id="emptyHint">
+      <p>← Drag nodes onto the canvas<br/>to build your pipeline</p>
+      <p style="font-size:10px;color:var(--text3);margin-top:4px">Scroll to zoom · Space+drag to pan</p>
+    </div>
+    <div class="sim-toolbar">
+      <button class="tool-btn" onclick="clearCanvas()">Clear</button>
+      <button class="tool-btn" onclick="loadExample()">Example</button>
+      <button class="tool-btn" onclick="fitView()">Fit</button>
+      <button class="tool-btn run" onclick="recalc()">▶ Run sim</button>
+      <span class="zoom-display" id="zoomDisplay">100%</span>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div class="stats-panel">
+    <div class="stats-hd">Pipeline stats</div>
+    <div class="pct-selector" id="pctSelector">
+      <span class="pct-pill active" data-p="50">p50</span>
+      <span class="pct-pill" data-p="75">p75</span>
+      <span class="pct-pill active" data-p="90">p90</span>
+      <span class="pct-pill active" data-p="95">p95</span>
+      <span class="pct-pill" data-p="99">p99</span>
+    </div>
+    <div class="stats-body" id="statsBody">
+      <p class="stats-empty">Add nodes and connect them to see latency estimates.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Edit node</div>
+    <div class="modal-sub" id="modalSub">Override parameters for this node</div>
+    <div class="form-row">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="mName" placeholder="Node name" maxlength="36"/>
+    </div>
+    <div class="form-row" id="colorPickerRow">
+      <label class="form-label">Color</label>
+      <div class="color-row" id="colorRow"></div>
+    </div>
+    <hr class="modal-divider"/>
+    <div class="form-grid-2">
+      <div>
+        <label class="form-label">p50 latency (ms)</label>
+        <input class="form-input" id="mP50" type="number" placeholder="50" min="1"/>
+        <div class="form-hint">Median response time</div>
+      </div>
+      <div>
+        <label class="form-label">p95 latency (ms)</label>
+        <input class="form-input" id="mP95" type="number" placeholder="150" min="1"/>
+        <div class="form-hint">Must be &gt; p50</div>
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div>
+        <label class="form-label">Max throughput (tps)</label>
+        <input class="form-input" id="mTps" type="number" placeholder="200" min="1"/>
+        <div class="form-hint">Requests per second</div>
+      </div>
+      <div>
+        <label class="form-label">Cost per request ($)</label>
+        <input class="form-input" id="mCost" type="number" placeholder="0.001" min="0" step="0.00001"/>
+        <div class="form-hint">In USD</div>
+      </div>
+    </div>
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn save" id="modalSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('pf_theme',t);
+}
+(function(){const t=localStorage.getItem('pf_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+
+// ── PERCENTILE MATH ───────────────────────────────────────────────────────────
+function invNorm(p){
+  const a=[2.50662823884,-18.61500062529,41.39119773534,-25.44106049637];
+  const b=[-8.47351093090,23.08336743743,-21.06224101826,3.13082909833];
+  const c=[.3374754822726147,.9761690190917186,.1607979714918209,.0276438810333863,.0038405729373609,.0003951896511349,.0000321767881768,.0000002888167364,.0000003960315187];
+  const q=p-.5;
+  if(Math.abs(q)<.42){const r=q*q;return q*(((a[3]*r+a[2])*r+a[1])*r+a[0])/((((b[3]*r+b[2])*r+b[1])*r+b[0])*r+1);}
+  const r2=Math.log(-Math.log(q<0?p:1-p));
+  const s=((((((((c[8]*r2+c[7])*r2+c[6])*r2+c[5])*r2+c[4])*r2+c[3])*r2+c[2])*r2+c[1])*r2+c[0]);
+  return q<0?-s:s;
+}
+function pctLat(p50,p95,pct){
+  if(pct===50)return p50;if(pct===95)return p95;
+  if(p50<=0||p95<=p50)return p95;
+  return Math.round(Math.exp(Math.log(p50)+Math.log(p95/p50)/1.6449*invNorm(pct/100)));
+}
+
+// ── CATEGORY COLORS ───────────────────────────────────────────────────────────
+const CAT_COLORS={retrieval:'var(--c-retrieval)',logic:'var(--c-logic)',model:'var(--c-model)',infra:'var(--c-infra)',database:'var(--c-database)',custom:'var(--c-custom)'};
+function catColor(cat){return CAT_COLORS[cat]||'var(--c-custom)';}
+
+// ── BUILT-IN NODE TYPES ───────────────────────────────────────────────────────
+const BUILTINS={
+  vector_db:{name:'Vector DB',cat:'retrieval',p50:40,p95:120,tps:500,cost:.002,
+    fix:{problem:'Vector DB is limiting your max throughput to {tps} tps. At this rate you can serve roughly {rph} requests per hour.',impact:'Your p95 latency includes {p95}ms from this node alone — that is {pct}% of total pipeline latency.',steps:['Add a semantic cache (Redis + embedding similarity) upstream to absorb repeat queries','Reduce top-k from default (often 20) to 5–8 — fewer results means faster retrieval','Consider sharding your index or upgrading to a dedicated cluster if QPS > 200']}},
+  reranker:{name:'Reranker',cat:'retrieval',p50:80,p95:200,tps:200,cost:.005,
+    fix:{problem:'Reranker is your slowest retrieval step at {p50}ms p50. Cross-encoders are accurate but expensive.',impact:'Reranking adds {p95}ms at p95. If you remove it, you trade quality for ~{p95}ms latency savings.',steps:['Reduce candidates to rerank from 20→8 — most quality gains happen in top 5','Try a smaller bi-encoder reranker (e.g. ms-marco-MiniLM) for 3–4× speed improvement','Cache reranker results by query hash — repeat questions are common in production']}},
+  cache:{name:'Cache',cat:'retrieval',p50:2,p95:5,tps:5000,cost:.0001,
+    fix:{problem:'Cache is not your bottleneck (good). If you are seeing high latency, look downstream.',impact:'A 40% cache hit rate would reduce effective pipeline latency by roughly 40% and cut costs proportionally.',steps:['Ensure cache TTL matches your data freshness requirements','Log cache hit rates — below 30% suggests queries are too unique for caching to help','Consider approximate matching (cosine similarity threshold) to catch near-duplicate queries']}},
+  embed:{name:'Embedder',cat:'logic',p50:20,p95:55,tps:1000,cost:.0005,
+    fix:{problem:'Embedder is called on every request. At {tps} tps max, it can become a bottleneck under load.',impact:'Embedding adds {p50}ms to every request. Batching or caching can eliminate most of this cost.',steps:['Cache embeddings for known/repeated queries — the same question asked twice needs one embedding','Batch multiple concurrent requests into a single API call','Switch to a local embedding model (e.g. sentence-transformers) to eliminate network round-trips']}},
+  router:{name:'Router',cat:'logic',p50:5,p95:12,tps:2000,cost:.0002,
+    fix:{problem:'Router latency is low at {p50}ms, but mis-routing causes downstream waste on expensive nodes.',impact:'Every mis-routed request hits a larger model than necessary. At scale this dominates cost.',steps:['Log routing decisions and audit accuracy monthly','Use a confidence threshold — route uncertain queries to a human or fallback','Consider a fine-tuned small classifier instead of an LLM for routing — 10× faster and cheaper']}},
+  guardrail:{name:'Guardrail',cat:'logic',p50:60,p95:150,tps:300,cost:.008,
+    fix:{problem:'Guardrail at {p50}ms p50 is one of your heavier logic nodes. At {tps} tps it can become a serial bottleneck.',impact:'Running guardrails synchronously adds {p95}ms at p95. For many use cases this is unnecessary overhead.',steps:['Run output guardrails asynchronously — return the response, flag violations post-hoc','Use a lightweight rule-based pre-filter to catch obvious violations before the ML model','Cache guardrail decisions for identical inputs — safety checks are deterministic']}},
+  vercel:{name:'Vercel',cat:'infra',p50:15,p95:800,tps:1000,cost:.000005,
+    fix:{problem:'Vercel cold starts drive your p95 to {p95}ms. Cold starts happen when a function has been idle for a few minutes.',impact:'Users who hit a cold function wait {p95}ms instead of {p50}ms — a {ratio}× difference. This disproportionately affects first-time and infrequent users.',steps:['Switch to Vercel Edge Functions — they cold-start in ~5ms vs 800ms for Node.js','Use Vercel Fluid Compute or keep-alive pings to maintain warm instances','Move long-running LLM calls out of Vercel functions into a persistent backend']}},
+  aws_lambda:{name:'AWS Lambda',cat:'infra',p50:10,p95:500,tps:1000,cost:.000002,
+    fix:{problem:'Lambda cold starts add up to {p95}ms at p95. Cold starts occur on first invocation or after periods of inactivity.',impact:'p95 is {ratio}× higher than p50 — this variance is entirely from cold starts, not your application logic.',steps:['Enable Provisioned Concurrency for latency-sensitive functions — eliminates cold starts','Use Lambda SnapStart (Java) or response streaming to reduce perceived latency','Keep payload size small — Lambda cold start time scales with deployment package size']}},
+  cf_workers:{name:'CF Workers',cat:'infra',p50:3,p95:8,tps:5000,cost:.0000003,
+    fix:{problem:'Cloudflare Workers are rarely the bottleneck. If latency is high, the issue is in your application logic or downstream calls.',impact:'Workers themselves add only {p50}ms. Every extra ms of latency is coming from API calls made inside the worker.',steps:['Profile which fetch() calls inside your worker are slowest','Use Workers KV or D1 for read-heavy data instead of hitting an external DB on every request','Enable Cloudflare Smart Placement to run your worker closer to your upstream APIs']}},
+  railway:{name:'Railway',cat:'infra',p50:2,p95:8,tps:800,cost:.000010,
+    fix:{problem:'Railway containers are warm but have a tps ceiling of {tps}. Under sustained load, requests will queue.',impact:'Queueing adds unbounded latency. At 2× your tps limit, average wait time equals average service time.',steps:['Add horizontal scaling — Railway supports multiple replicas behind a load balancer','Profile memory usage — OOM-induced restarts mimic cold start behavior','Move CPU-intensive tasks to a background worker service']}},
+  fly_io:{name:'Fly.io',cat:'infra',p50:3,p95:10,tps:800,cost:.000009,
+    fix:{problem:'Fly.io latency scales with geographic distance between your Machines and your users.',impact:'Deploying in the wrong region adds 50–150ms of network latency that dwarfs your application latency.',steps:['Deploy Machines to regions closest to your users — Fly.io supports 30+ regions','Enable Fly.io\'s anycast routing to automatically direct users to the nearest region','Use Fly Volumes for stateful services — network-attached storage adds latency vs local disks']}},
+  gcp_run:{name:'Cloud Run',cat:'infra',p50:8,p95:2000,tps:1000,cost:.000024,
+    fix:{problem:'Cloud Run cold starts are 1–3 seconds for Node.js/Python. Your p95 of {p95}ms suggests cold starts are frequent.',impact:'At {ratio}× difference between p50 and p95, most of your tail latency is pure cold start, not application code.',steps:['Set --min-instances=1 to keep at least one container warm at all times','Use startup probes and increase the startup timeout to prevent false health check failures','Build smaller container images — cold start time is proportional to image pull time. Aim for < 100MB']}},
+  postgres:{name:'Postgres',cat:'database',p50:5,p95:25,tps:2000,cost:.000001,
+    fix:{problem:'Postgres query latency is {p50}ms p50. Under load, connection limits and locking become the dominant issue.',impact:'Without connection pooling, each new request opens a new connection. Postgres handles ~100 concurrent connections before degrading.',steps:['Add PgBouncer in transaction mode — allows thousands of app connections to share a small DB pool','Index your most frequent query patterns — un-indexed queries on large tables cause 100–1000ms spikes','Use EXPLAIN ANALYZE on your slowest queries to identify full table scans']}},
+  redis:{name:'Redis',cat:'database',p50:1,p95:3,tps:10000,cost:.0000005,
+    fix:{problem:'Redis is almost never the bottleneck. If you are seeing high latency, look at network configuration.',impact:'Redis RTT is dominated by network latency. If Redis is on the same machine or VPC, latency should be <1ms.',steps:['Ensure Redis is in the same cloud region/VPC as your application server','Use Redis pipelining to batch multiple commands into a single round trip','Check for large keys (> 10KB) — serialization/deserialization adds latency client-side']}},
+};
+
+// ── MODEL LIBRARY ─────────────────────────────────────────────────────────────
+const MODELS=[
+  {id:'gpt4o',provider:'OpenAI',name:'GPT-4o',p50:600,p95:2000,tps:30,cost:.0000025,ctx:'128k',size:'large'},
+  {id:'gpt4o_mini',provider:'OpenAI',name:'GPT-4o mini',p50:280,p95:700,tps:80,cost:.00000015,ctx:'128k',size:'small'},
+  {id:'gpt41',provider:'OpenAI',name:'GPT-4.1',p50:500,p95:1800,tps:30,cost:.000002,ctx:'1M',size:'large'},
+  {id:'gpt41_mini',provider:'OpenAI',name:'GPT-4.1 mini',p50:220,p95:600,tps:100,cost:.0000001,ctx:'1M',size:'small'},
+  {id:'o3',provider:'OpenAI',name:'o3',p50:8000,p95:30000,tps:5,cost:.000010,ctx:'200k',size:'reasoning'},
+  {id:'o4mini',provider:'OpenAI',name:'o4-mini',p50:2000,p95:8000,tps:15,cost:.0000011,ctx:'200k',size:'reasoning'},
+  {id:'claude_opus4',provider:'Anthropic',name:'Claude Opus 4',p50:1400,p95:4000,tps:12,cost:.000015,ctx:'200k',size:'large'},
+  {id:'claude_sonnet4',provider:'Anthropic',name:'Claude Sonnet 4',p50:700,p95:2200,tps:35,cost:.000003,ctx:'200k',size:'medium'},
+  {id:'claude_haiku35',provider:'Anthropic',name:'Claude Haiku 3.5',p50:260,p95:700,tps:100,cost:.0000008,ctx:'200k',size:'small'},
+  {id:'gemini25pro',provider:'Google',name:'Gemini 2.5 Pro',p50:900,p95:3000,tps:20,cost:.00000125,ctx:'1M',size:'large'},
+  {id:'gemini25flash',provider:'Google',name:'Gemini 2.5 Flash',p50:350,p95:900,tps:60,cost:.000000075,ctx:'1M',size:'small'},
+  {id:'gemini20flash',provider:'Google',name:'Gemini 2.0 Flash',p50:300,p95:800,tps:70,cost:.0000001,ctx:'1M',size:'small'},
+  {id:'llama33_70b',provider:'Meta',name:'Llama 3.3 70B',p50:400,p95:1100,tps:40,cost:.0000009,ctx:'128k',size:'medium'},
+  {id:'llama31_405b',provider:'Meta',name:'Llama 3.1 405B',p50:1800,p95:5000,tps:8,cost:.000005,ctx:'128k',size:'large'},
+  {id:'llama32_3b',provider:'Meta',name:'Llama 3.2 3B',p50:80,p95:200,tps:300,cost:.00000006,ctx:'128k',size:'small'},
+  {id:'mistral_large2',provider:'Mistral',name:'Mistral Large 2',p50:600,p95:1800,tps:25,cost:.000002,ctx:'128k',size:'large'},
+  {id:'mistral_small3',provider:'Mistral',name:'Mistral Small 3',p50:180,p95:450,tps:120,cost:.0000001,ctx:'32k',size:'small'},
+  {id:'grok3',provider:'xAI',name:'Grok 3',p50:800,p95:2500,tps:20,cost:.000003,ctx:'131k',size:'large'},
+  {id:'grok3mini',provider:'xAI',name:'Grok 3 mini',p50:300,p95:800,tps:70,cost:.0000003,ctx:'131k',size:'small'},
+  {id:'deepseek_v3',provider:'DeepSeek',name:'DeepSeek V3',p50:500,p95:1500,tps:30,cost:.00000027,ctx:'64k',size:'large'},
+  {id:'deepseek_r1',provider:'DeepSeek',name:'DeepSeek R1',p50:3000,p95:10000,tps:8,cost:.0000014,ctx:'64k',size:'reasoning'},
+];
+
+// ── PERSISTED STATE ───────────────────────────────────────────────────────────
+let chipOverrides={},customTypes={};
+function load(){
+  try{chipOverrides=JSON.parse(localStorage.getItem('fs_overrides')||'{}')}catch(e){chipOverrides={}}
+  try{customTypes=JSON.parse(localStorage.getItem('fs_custom')||'{}')}catch(e){customTypes={}}
+}
+function saveOverrides(){try{localStorage.setItem('fs_overrides',JSON.stringify(chipOverrides))}catch(e){}}
+function saveCustom(){try{localStorage.setItem('fs_custom',JSON.stringify(customTypes))}catch(e){}}
+
+function getDef(type){
+  const model=MODELS.find(m=>m.id===type);
+  if(model){
+    const base={name:model.name,cat:'model',p50:model.p50,p95:model.p95,tps:model.tps,cost:model.cost,
+      fix:{problem:`${model.name} is limiting throughput to {tps} tps.`,
+           impact:`At p95 this model adds {p95}ms — typically {pct}% of total pipeline latency.`,
+           steps:['Consider a smaller/faster model for simpler queries using a router upstream',
+                  'Implement streaming responses to reduce perceived latency',
+                  'Cache common prompt+response pairs to avoid repeated inference']}};
+    return Object.assign({},base,chipOverrides[type]||{});
+  }
+  if(BUILTINS[type]) return Object.assign({},BUILTINS[type],chipOverrides[type]||{});
+  if(customTypes[type]) return Object.assign({},customTypes[type]);
+  return null;
+}
+
+// ── CANVAS STATE ──────────────────────────────────────────────────────────────
+let nodes=[],edges=[],nc=0,dragging=null,connectFrom=null,selectedId=null;
+let activePcts=new Set([50,95]);
+let zoom=1,panX=0,panY=0,isPanning=false,panStart={x:0,y:0},spaceDown=false;
+
+// ── ZOOM / PAN ────────────────────────────────────────────────────────────────
+function applyTransform(){
+  const t=document.getElementById('canvasTransform');
+  t.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;
+  const bg=document.getElementById('canvasBg');
+  const sz=28*zoom;
+  bg.style.backgroundSize=`${sz}px ${sz}px`;
+  bg.style.backgroundPosition=`${panX}px ${panY}px`;
+  document.getElementById('zoomDisplay').textContent=Math.round(zoom*100)+'%';
+}
+function onWheel(e){
+  e.preventDefault();
+  const wr=document.getElementById('canvasWrap').getBoundingClientRect();
+  const mx=e.clientX-wr.left,my=e.clientY-wr.top;
+  const delta=e.deltaY<0?1.1:0.91;
+  const newZoom=Math.max(.2,Math.min(3,zoom*delta));
+  panX=mx-(mx-panX)*(newZoom/zoom);
+  panY=my-(my-panY)*(newZoom/zoom);
+  zoom=newZoom;
+  applyTransform();
+}
+function onCanvasMouseDown(e){
+  if(e.button===1||(e.button===0&&spaceDown)){
+    e.preventDefault();isPanning=true;
+    panStart={x:e.clientX-panX,y:e.clientY-panY};
+    document.getElementById('canvasWrap').style.cursor='grabbing';
+  }
+}
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.target.matches('input,textarea')){e.preventDefault();spaceDown=true;document.getElementById('canvasWrap').style.cursor='grab';}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;document.getElementById('canvasWrap').style.cursor='';}});
+document.addEventListener('mousemove',e=>{if(isPanning){panX=e.clientX-panStart.x;panY=e.clientY-panStart.y;applyTransform();}});
+document.addEventListener('mouseup',e=>{if(isPanning){isPanning=false;document.getElementById('canvasWrap').style.cursor=spaceDown?'grab':'';}});
+function fitView(){
+  if(nodes.length===0){zoom=1;panX=60;panY=60;applyTransform();return;}
+  const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
+  const minX=Math.min(...xs)-20,minY=Math.min(...ys)-20;
+  const maxX=Math.max(...xs)+180,maxY=Math.max(...ys)+80;
+  const wr=document.getElementById('canvasWrap').getBoundingClientRect();
+  const z=Math.min(.9,Math.min(wr.width/(maxX-minX),wr.height/(maxY-minY)));
+  zoom=Math.max(.3,Math.min(1.5,z));
+  panX=-minX*zoom+40;panY=-minY*zoom+40;
+  applyTransform();
+}
+
+// ── SIDEBAR TABS ──────────────────────────────────────────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.sidebar-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ── MODEL LIST ────────────────────────────────────────────────────────────────
+function renderModelList(q=''){
+  const lc=q.toLowerCase();
+  const filtered=lc?MODELS.filter(m=>m.name.toLowerCase().includes(lc)||m.provider.toLowerCase().includes(lc)):MODELS;
+  const byProvider={};
+  filtered.forEach(m=>{(byProvider[m.provider]=byProvider[m.provider]||[]).push(m);});
+  const sc={large:['rgba(230,96,122,.15)','var(--c-database)'],reasoning:['rgba(155,127,232,.15)','var(--c-infra)'],medium:['rgba(246,167,64,.15)','var(--c-model)'],small:['rgba(78,205,196,.15)','var(--c-logic)']};
+  let html='';
+  Object.entries(byProvider).forEach(([prov,ms])=>{
+    html+=`<div class="model-provider-label">${prov}</div>`;
+    ms.forEach(m=>{
+      const [sbg,stxt]=sc[m.size]||sc.small;
+      const costStr='$'+(m.cost*1000000).toFixed(2)+'/1M';
+      html+=`<div class="model-chip" draggable="true" ondragstart="startDrag(event,'${m.id}')">
+        <div class="model-chip-header"><div class="model-chip-dot" style="background:var(--c-model)"></div><span class="model-chip-name">${m.name}</span></div>
+        <div class="model-chip-badges">
+          <span class="model-badge" style="background:${sbg};color:${stxt}">${m.size}</span>
+          <span class="model-badge" style="background:var(--surface3);color:var(--text3)">${m.p50}ms</span>
+          <span class="model-badge" style="background:var(--surface3);color:var(--text3)">${costStr}</span>
+          <span class="model-badge" style="background:var(--surface3);color:var(--text3)">${m.ctx}</span>
+        </div>
+      </div>`;
+    });
+  });
+  document.getElementById('modelList').innerHTML=html||'<div style="padding:14px 12px;font-size:11px;color:var(--text3)">No results.</div>';
+}
+function filterModels(q){renderModelList(q);}
+
+// ── CUSTOM CHIPS ──────────────────────────────────────────────────────────────
+function renderCustomChips(){
+  const c=document.getElementById('customChips');c.innerHTML='';
+  Object.entries(customTypes).forEach(([key,def])=>{
+    const d=document.createElement('div');d.style.position='relative';
+    const chip=document.createElement('div');chip.className='node-chip';chip.draggable=true;chip.ondragstart=e=>startDrag(e,key);
+    chip.innerHTML=`<div class="chip-dot" style="background:var(--c-custom)"></div>
+      <div style="flex:1;min-width:0"><span class="chip-name">${def.name}</span><span class="chip-lat">p50 ${def.p50}ms</span></div>
+      <span class="chip-edit" onclick="openEditCustomChip(event,'${key}')">✎</span>
+      <span class="chip-del" onclick="deleteCustom('${key}')">✕</span>`;
+    d.appendChild(chip);c.appendChild(d);
+  });
+}
+function deleteCustom(key){
+  nodes.filter(n=>n.type===key).forEach(n=>removeNode(n.id));
+  delete customTypes[key];saveCustom();renderCustomChips();
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+function startDrag(e,type){dragging=type;e.dataTransfer.effectAllowed='copy';}
+function dropNode(e){
+  if(!dragging)return;
+  const r=document.getElementById('canvasWrap').getBoundingClientRect();
+  const cx=(e.clientX-r.left-panX)/zoom;
+  const cy=(e.clientY-r.top-panY)/zoom;
+  addNode(dragging,cx-76,cy-26);
+  dragging=null;
+}
+function addNode(type,x,y){
+  const def=getDef(type);if(!def)return;
+  const id='n'+(++nc);
+  nodes.push({id,type,x:Math.max(8,x),y:Math.max(8,y),def:Object.assign({},def)});
+  renderNode(nodes[nodes.length-1]);
+  document.getElementById('emptyHint').style.display='none';
+  recalc();
+}
+
+function renderNode(n){
+  const pp=[...activePcts].sort((a,b)=>a-b)[0]||50;
+  const cc=catColor(n.def.cat||'custom');
+  const el=document.createElement('div');
+  el.className='pnode';el.id=n.id;el.style.cssText=`left:${n.x}px;top:${n.y}px`;
+  el.innerHTML=`
+    <div class="pnode-cat-bar" style="background:${cc}"></div>
+    <div class="pnode-actions">
+      <span class="pnode-btn" title="Edit" onclick="openEditNode(event,'${n.id}')">✎</span>
+      <span class="pnode-btn del" title="Remove" onclick="removeNode('${n.id}')">✕</span>
+    </div>
+    <div class="pnode-header">
+      <div class="pnode-name">${n.def.name}</div>
+    </div>
+    <div class="pnode-meta" id="pm_${n.id}">p${pp} ${pctLat(n.def.p50,n.def.p95,pp)}ms · ${n.def.tps} tps</div>
+    <div class="port port-in" id="${n.id}_in" onmouseup="endConnect(event,'${n.id}')"></div>
+    <div class="port port-out" id="${n.id}_out" onmousedown="startConnect(event,'${n.id}')"></div>`;
+  el.onmousedown=ev=>{
+    if(spaceDown)return;
+    if(['port','pnode-btn'].some(c=>ev.target.classList.contains(c)))return;
+    selectNode(n.id);
+    const rect=el.getBoundingClientRect();
+    const ox=ev.clientX-rect.left,oy=ev.clientY-rect.top;
+    const mm=mv=>{
+      const wr=document.getElementById('canvasWrap').getBoundingClientRect();
+      n.x=(mv.clientX-wr.left-panX)/zoom-ox/zoom;
+      n.y=(mv.clientY-wr.top-panY)/zoom-oy/zoom;
+      el.style.left=n.x+'px';el.style.top=n.y+'px';drawEdges();
+    };
+    const mu=()=>{document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  };
+  document.getElementById('canvasNodes').appendChild(el);
+}
+
+function refreshMetas(){
+  const pp=[...activePcts].sort((a,b)=>a-b)[0]||50;
+  nodes.forEach(n=>{const m=document.getElementById('pm_'+n.id);if(m)m.textContent=`p${pp} ${pctLat(n.def.p50,n.def.p95,pp)}ms · ${n.def.tps} tps`;});
+}
+function selectNode(id){selectedId=id;document.querySelectorAll('.pnode').forEach(el=>el.classList.toggle('selected',el.id===id));recalc();}
+
+// ── EDGES ─────────────────────────────────────────────────────────────────────
+function startConnect(e,fromId){
+  e.stopPropagation();e.preventDefault();connectFrom=fromId;
+  const svg=document.getElementById('edgesSvg');
+  const tmp=document.createElementNS('http://www.w3.org/2000/svg','path');
+  tmp.id='tmpEdge';tmp.setAttribute('stroke','var(--accent)');tmp.setAttribute('stroke-width','1.5');
+  tmp.setAttribute('fill','none');tmp.setAttribute('stroke-dasharray','5 4');tmp.setAttribute('opacity','.6');
+  svg.appendChild(tmp);
+  const mm=mv=>{
+    const p=portPos(fromId,'out');
+    const wr=document.getElementById('canvasWrap').getBoundingClientRect();
+    const tx=(mv.clientX-wr.left-panX)/zoom;
+    const ty=(mv.clientY-wr.top-panY)/zoom;
+    tmp.setAttribute('d',bz(p.x,p.y,tx,ty));
+  };
+  const mu=()=>{document.getElementById('tmpEdge')?.remove();connectFrom=null;document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
+  document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+}
+function endConnect(e,toId){
+  e.stopPropagation();if(!connectFrom||connectFrom===toId)return;
+  if(!edges.find(ed=>ed.from===connectFrom&&ed.to===toId)){edges.push({from:connectFrom,to:toId});drawEdges();recalc();}
+}
+function bz(x1,y1,x2,y2){const d=Math.abs(x2-x1)*.55;return `M${x1},${y1} C${x1+d},${y1} ${x2-d},${y2} ${x2},${y2}`;}
+function portPos(nid,side){
+  const el=document.getElementById(nid);
+  const ct=document.getElementById('canvasTransform');
+  const er=el.getBoundingClientRect();
+  const cr=ct.getBoundingClientRect();
+  const x=(er.left-cr.left)/zoom+(side==='out'?el.offsetWidth:0);
+  const y=(er.top-cr.top)/zoom+el.offsetHeight/2;
+  return {x,y};
+}
+function drawEdges(){
+  const svg=document.getElementById('edgesSvg');svg.querySelectorAll('.edge').forEach(e=>e.remove());
+  edges.forEach(ed=>{try{
+    const f=portPos(ed.from,'out'),t=portPos(ed.to,'in');
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',bz(f.x,f.y,t.x,t.y));
+    p.setAttribute('stroke','var(--c-retrieval)');p.setAttribute('stroke-width','1.5');
+    p.setAttribute('fill','none');p.setAttribute('opacity','.7');p.setAttribute('class','edge');
+    svg.appendChild(p);
+  }catch(e){}});
+}
+function removeNode(id){
+  nodes=nodes.filter(n=>n.id!==id);edges=edges.filter(e=>e.from!==id&&e.to!==id);
+  document.getElementById(id)?.remove();drawEdges();recalc();
+  if(nodes.length===0)document.getElementById('emptyHint').style.display='flex';
+}
+
+// ── BOTTLENECK ANALYSIS ───────────────────────────────────────────────────────
+function buildBottleneckHTML(bottle,totalP95){
+  if(!bottle)return'';
+  const def=bottle.def;
+  const fix=def.fix;
+  if(!fix||typeof fix==='string'){
+    return`<div class="stat-group-title">Bottleneck</div>
+    <div class="bottleneck-box">
+      <div class="bn-header"><span class="bn-icon">⚠</span><span class="bn-title">Limiting node</span></div>
+      <div class="bn-name">${def.name}</div>
+      <div class="bn-fix">${typeof fix==='string'?fix:'No fix data available.'}</div>
+    </div>`;
+  }
+  const rph=Math.round(def.tps*3600).toLocaleString();
+  const p95share=Math.round((def.p95/totalP95)*100);
+  const ratio=Math.round(def.p95/def.p50);
+  const problem=fix.problem.replace('{tps}',def.tps).replace('{rph}',rph);
+  const impact=fix.impact.replace('{p95}',def.p95+'ms').replace('{pct}',p95share).replace('{ratio}',ratio+'×');
+  const stepsHtml=fix.steps.map(s=>`<li>${s}</li>`).join('');
+  return`<div class="stat-group-title">Bottleneck</div>
+  <div class="bottleneck-box">
+    <div class="bn-header"><span class="bn-icon">⚠</span><span class="bn-title">Limiting node</span></div>
+    <div class="bn-name">${def.name}</div>
+    <div class="bn-impact">${problem}<br/>${impact}</div>
+    <div class="bn-fix-label">Recommended fixes</div>
+    <ul class="bn-fix">${stepsHtml}</ul>
+  </div>`;
+}
+
+// ── STATS RECALC ──────────────────────────────────────────────────────────────
+function initPctSelector(){
+  document.querySelectorAll('#pctSelector .pct-pill').forEach(pill=>{
+    const p=parseInt(pill.dataset.p);pill.classList.toggle('active',activePcts.has(p));
+    pill.onclick=()=>{if(activePcts.has(p)){if(activePcts.size<=1)return;activePcts.delete(p);pill.classList.remove('active');}else{activePcts.add(p);pill.classList.add('active');}recalc();};
+  });
+}
+function recalc(){
+  refreshMetas();
+  const sb=document.getElementById('statsBody');
+  if(nodes.length===0){sb.innerHTML='<p class="stats-empty">Add nodes and connect them to see latency estimates.</p>';return;}
+  const pcts=[...activePcts].sort((a,b)=>a-b);
+  const minTps=Math.min(...nodes.map(n=>n.def.tps));
+  const bottle=nodes.find(n=>n.def.tps===minTps);
+  const totalP95=nodes.reduce((s,n)=>s+pctLat(n.def.p50,n.def.p95,95),0);
+  const cost1k=nodes.reduce((s,n)=>s+n.def.cost,0)*1000;
+  const sel=selectedId?nodes.find(n=>n.id===selectedId):null;
+  const latRows=pcts.map(p=>{const t=nodes.reduce((s,n)=>s+pctLat(n.def.p50,n.def.p95,p),0);const cls=t>2000?'bad':t>800?'warn':'';return`<div class="stat-row"><span class="stat-lbl">p${p} total</span><span class="stat-val ${cls}">${t}ms</span></div>`;}).join('');
+  const selRows=sel?pcts.map(p=>`<div class="nd-row"><span class="nd-key">p${p}</span><span class="nd-val">${pctLat(sel.def.p50,sel.def.p95,p)}ms</span></div>`).join(''):'';
+  const tpscls=minTps<20?'bad':minTps<100?'warn':'';
+  sb.innerHTML=`<div class="stat-group-title">Latency</div>${latRows}
+    <div class="stat-row"><span class="stat-lbl">nodes</span><span class="stat-val" style="color:var(--text2)">${nodes.length}</span></div>
+    <div class="stat-group-title">Throughput</div>
+    <div class="stat-row"><span class="stat-lbl">max tps</span><span class="stat-val ${tpscls}">${minTps}</span></div>
+    <div class="stat-row"><span class="stat-lbl">req / hour</span><span class="stat-val" style="color:var(--text2)">${(minTps*3600).toLocaleString()}</span></div>
+    <div class="stat-group-title">Cost</div>
+    <div class="stat-row"><span class="stat-lbl">per 1k reqs</span><span class="stat-val">$${cost1k.toFixed(3)}</span></div>
+    <div class="stat-row"><span class="stat-lbl">per 1M reqs</span><span class="stat-val" style="color:var(--text2)">$${(cost1k*1000).toFixed(1)}</span></div>
+    <div class="stat-row"><span class="stat-lbl">per day @ ${minTps}tps</span><span class="stat-val" style="color:var(--text2)">$${(cost1k*minTps*86.4).toFixed(0)}</span></div>
+    ${buildBottleneckHTML(bottle,totalP95)}
+    ${sel?`<div class="stat-group-title">Selected: ${sel.def.name}</div><div class="node-detail">${selRows}<div class="nd-row"><span class="nd-key">max tps</span><span class="nd-val">${sel.def.tps}</span></div><div class="nd-row"><span class="nd-key">cost/req</span><span class="nd-val">$${sel.def.cost}</span></div><div class="nd-row"><span class="nd-key">category</span><span class="nd-val">${sel.def.cat||'custom'}</span></div></div>`:''}`;
+}
+
+// ── CANVAS CONTROLS ───────────────────────────────────────────────────────────
+function clearCanvas(){
+  nodes=[];edges=[];nc=0;selectedId=null;
+  document.getElementById('canvasNodes').innerHTML='';
+  document.getElementById('edgesSvg').querySelectorAll('.edge').forEach(e=>e.remove());
+  document.getElementById('emptyHint').style.display='flex';recalc();
+}
+
+function loadExample(){
+  clearCanvas();
+  setTimeout(()=>{
+    // A real production RAG pipeline with router branching
+    // Row 1: entry
+    addNode('vercel',40,20);
+    addNode('guardrail',240,20);
+    addNode('router',440,20);
+    // Row 2: simple branch (direct answer)
+    addNode('redis',640,20);
+    // Row 3: RAG branch
+    addNode('embed',440,160);
+    addNode('cache',440,270);
+    addNode('vector_db',640,160);
+    addNode('reranker',640,270);
+    // Row 4: generation
+    addNode('claude_haiku35',840,90);
+    addNode('claude_sonnet4',840,200);
+    // Row 5: output
+    addNode('guardrail',1040,145);
+    setTimeout(()=>{
+      // Main flow
+      edges.push({from:'n1',to:'n2'});   // vercel → input guardrail
+      edges.push({from:'n2',to:'n3'});   // input guardrail → router
+      // Router branches
+      edges.push({from:'n3',to:'n4'});   // router → redis (cache hit / simple query)
+      edges.push({from:'n3',to:'n5'});   // router → embedder (complex query)
+      // RAG branch
+      edges.push({from:'n5',to:'n6'});   // embedder → semantic cache
+      edges.push({from:'n6',to:'n7'});   // cache miss → vector DB
+      edges.push({from:'n7',to:'n8'});   // vector DB → reranker
+      // Generation
+      edges.push({from:'n4',to:'n9'});   // simple → haiku
+      edges.push({from:'n8',to:'n10'});  // reranked docs → sonnet
+      // Converge at output guardrail
+      edges.push({from:'n9',to:'n11'});
+      edges.push({from:'n10',to:'n11'});
+      drawEdges();recalc();
+      setTimeout(()=>fitView(),80);
+    },60);
+  },60);
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function exportJSON(){
+  const data={version:1,nodes:nodes.map(n=>({id:n.id,type:n.type,x:n.x,y:n.y,def:n.def})),edges};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='preflight-pipeline.json';a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      clearCanvas();
+      nc=0;
+      (data.nodes||[]).forEach(n=>{
+        // Extract number from id to keep nc in sync
+        const num=parseInt(n.id.replace('n',''));
+        if(num>nc)nc=num;
+        nodes.push({id:n.id,type:n.type,x:n.x,y:n.y,def:n.def});
+        renderNode(nodes[nodes.length-1]);
+      });
+      edges=[...(data.edges||[])];
+      document.getElementById('emptyHint').style.display=nodes.length?'none':'flex';
+      setTimeout(()=>{drawEdges();recalc();fitView();},60);
+    }catch(err){alert('Could not import: '+err.message);}
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+function exportPNG(){
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload=()=>{
+    const wrap=document.getElementById('canvasWrap');
+    html2canvas(wrap,{backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim(),scale:2,useCORS:true}).then(canvas=>{
+      const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+      a.download='preflight-pipeline.png';a.click();
+    });
+  };
+  document.head.appendChild(script);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+const PALETTE=['var(--c-retrieval)','var(--c-logic)','var(--c-model)','var(--c-infra)','var(--c-database)','var(--c-custom)','#e8b86d','#b8e8d0','#e8a0c8','#c8c8e8'];
+const RAW_PALETTE=['#5b8dee','#4ecdc4','#f6a740','#9b7fe8','#e8607a','#78b97a','#e8b86d','#b8e8d0','#e8a0c8','#c8c8e8'];
+let selColor=RAW_PALETTE[0];
+let mMode=null,mTarget=null;
+
+function initColorPicker(cur){
+  selColor=cur||RAW_PALETTE[0];
+  const row=document.getElementById('colorRow');row.innerHTML='';
+  RAW_PALETTE.forEach(c=>{
+    const s=document.createElement('div');s.className='color-swatch'+(c===selColor?' selected':'');
+    s.style.background=c;
+    s.onclick=()=>{selColor=c;row.querySelectorAll('.color-swatch').forEach(sw=>sw.classList.remove('selected'));s.classList.add('selected');};
+    row.appendChild(s);
+  });
+}
+function openModal(){document.getElementById('modalBackdrop').classList.add('open');document.getElementById('modalError').textContent='';document.getElementById('modalSaveBtn').onclick=saveModal;}
+function closeModal(){document.getElementById('modalBackdrop').classList.remove('open');mMode=null;mTarget=null;}
+function closeModalOutside(e){if(e.target===document.getElementById('modalBackdrop'))closeModal();}
+
+function fillModal(title,sub,def,mode,target,btnLabel){
+  mMode=mode;mTarget=target;
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalSub').textContent=sub;
+  document.getElementById('mName').value=def.name||'';
+  document.getElementById('mP50').value=def.p50||'';
+  document.getElementById('mP95').value=def.p95||'';
+  document.getElementById('mTps').value=def.tps||'';
+  document.getElementById('mCost').value=def.cost||'';
+  document.getElementById('modalSaveBtn').textContent=btnLabel;
+  initColorPicker(def.color||RAW_PALETTE[0]);
+  openModal();
+}
+function openEditChip(e,type){e.stopPropagation();const def=getDef(type);fillModal('Edit default: '+def.name,'Changes default for all new nodes of this type',def,'chip',type,'Save defaults');}
+function openEditNode(e,nodeId){e.stopPropagation();const n=nodes.find(n=>n.id===nodeId);if(!n)return;fillModal('Edit: '+n.def.name,'Overrides this instance only',n.def,'node',nodeId,'Save instance');}
+function openCreateModal(){fillModal('Create custom node','Define the performance profile of your component',{name:'',p50:'',p95:'',tps:'',cost:''},'create',null,'Create node');}
+function openEditCustomChip(e,key){e.stopPropagation();const def=customTypes[key];mMode='custom';mTarget=key;fillModal('Edit: '+def.name,'Update this custom node type',def,'custom',key,'Save');}
+
+function saveModal(){
+  const name=document.getElementById('mName').value.trim();
+  const p50=parseFloat(document.getElementById('mP50').value);
+  const p95=parseFloat(document.getElementById('mP95').value);
+  const tps=parseFloat(document.getElementById('mTps').value);
+  const cost=parseFloat(document.getElementById('mCost').value);
+  const err=document.getElementById('modalError');
+  if(!name){err.textContent='Name is required.';return;}
+  if(isNaN(p50)||p50<=0){err.textContent='p50 must be a positive number.';return;}
+  if(isNaN(p95)||p95<=p50){err.textContent='p95 must be greater than p50.';return;}
+  if(isNaN(tps)||tps<=0){err.textContent='Throughput must be positive.';return;}
+  if(isNaN(cost)||cost<0){err.textContent='Cost must be 0 or greater.';return;}
+  const patch={name,color:selColor,p50:Math.round(p50),p95:Math.round(p95),tps:Math.round(tps),cost};
+  if(mMode==='chip'){chipOverrides[mTarget]=patch;saveOverrides();const l=document.getElementById('clat_'+mTarget);if(l)l.textContent='p50 '+patch.p50+'ms';}
+  else if(mMode==='node'){const n=nodes.find(n=>n.id===mTarget);if(n){Object.assign(n.def,patch);const el=document.getElementById(n.id);if(el){el.querySelector('.pnode-cat-bar').style.background=patch.color;el.querySelector('.pnode-name').textContent=patch.name;}recalc();}}
+  else if(mMode==='create'){const key='custom_'+Date.now();customTypes[key]=Object.assign({},patch,{cat:'custom',fix:{problem:`${name} at {tps} tps is your current bottleneck.`,impact:'Update the p50/p95 values with your observed production metrics for accurate analysis.',steps:['Click ✎ on this node to enter your measured p50 and p95 latency values','Set tps to your component\'s tested maximum throughput','Update cost to your actual per-request pricing']}});saveCustom();renderCustomChips();}
+  else if(mMode==='custom'){Object.assign(customTypes[mTarget],patch);saveCustom();renderCustomChips();}
+  closeModal();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+load();renderCustomChips();initPctSelector();renderModelList();
+panX=60;panY=60;applyTransform();
+</script>
+</body>
+</html>

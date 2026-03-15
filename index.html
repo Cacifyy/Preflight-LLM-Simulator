@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PreFlight — LLM Pipeline Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+[data-theme="dark"]{
+  --bg:#0f1117;--bg2:#13161e;--surface:#1a1d27;--surface2:#21253200;--surface3:#282d3d;
+  --border:#2a2f40;--border2:#363d52;
+  --text:#e8e6df;--text2:#9b97a0;--text3:#545063;
+  --accent:#7eb8a4;--accent-dim:#5d9988;--accent-text:#c8ece3;
+}
+[data-theme="light"]{
+  --bg:#f5f3ee;--bg2:#edeae3;--surface:#ffffff;--surface2:#f0ede6;--surface3:#e8e4db;
+  --border:#d8d3c8;--border2:#c4bfb4;
+  --text:#1e1c18;--text2:#6b6560;--text3:#a09a92;
+  --accent:#4a8f7a;--accent-dim:#3a7262;--accent-text:#2a5f50;
+}
+
+:root{--mono:'IBM Plex Mono',monospace;--sans:'Syne',sans-serif;}
+
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);overflow-x:hidden;transition:background .2s,color .2s}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 40px;gap:32px;}
+.nav-logo{font-family:var(--sans);font-weight:800;font-size:17px;color:var(--accent);text-decoration:none;letter-spacing:-.02em}
+.nav-links{display:flex;gap:28px;margin-left:auto}
+.nav-links a{color:var(--text3);text-decoration:none;font-size:12px;transition:color .15s;letter-spacing:.02em}
+.nav-links a:hover{color:var(--text2)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.theme-toggle{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--text3);cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.nav-cta{background:var(--accent);color:var(--bg);font-family:var(--mono);font-size:11px;
+  font-weight:500;padding:8px 18px;border-radius:4px;text-decoration:none;
+  border:none;cursor:pointer;transition:all .15s;letter-spacing:.02em}
+.nav-cta:hover{background:var(--accent-dim)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:120px 40px 80px;position:relative;text-align:center;}
+.hero-eyebrow{font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:24px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:24px;height:1px;background:var(--accent);opacity:.5;}
+.hero h1{font-family:var(--sans);font-weight:800;
+  font-size:clamp(44px,8vw,96px);line-height:.95;letter-spacing:-.04em;
+  color:var(--text);margin-bottom:28px;}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero-sub{max-width:480px;line-height:1.75;color:var(--text2);font-size:14px;margin-bottom:48px;
+  font-weight:300;}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:80px;}
+.btn-primary{background:var(--accent);color:var(--bg);font-family:var(--mono);font-weight:500;
+  font-size:12px;padding:12px 28px;border-radius:4px;text-decoration:none;
+  border:none;cursor:pointer;transition:all .2s;display:inline-block;letter-spacing:.04em}
+.btn-primary:hover{background:var(--accent-dim);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);font-family:var(--mono);font-size:12px;
+  padding:12px 28px;border-radius:4px;text-decoration:none;border:1px solid var(--border2);
+  cursor:pointer;transition:all .2s;display:inline-block;letter-spacing:.04em}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent-text);transform:translateY(-1px)}
+
+/* stats row */
+.hero-stats{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.hero-stat{padding:16px 32px;text-align:center;border-right:1px solid var(--border);}
+.hero-stat:last-child{border-right:none}
+.hero-stat-num{font-family:var(--sans);font-weight:700;font-size:24px;color:var(--text);letter-spacing:-.02em}
+.hero-stat-label{font-size:10px;color:var(--text3);margin-top:3px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ── CONTENT SECTIONS ── */
+.content{max-width:860px;margin:0 auto;padding:80px 40px;}
+
+.divider{border:none;border-top:1px solid var(--border);max-width:860px;margin:0 auto;}
+
+/* ── HOW IT WORKS — editorial ── */
+.how-label{font-size:10px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;
+  margin-bottom:40px;display:block;}
+.how-intro{font-family:var(--sans);font-weight:400;font-size:clamp(20px,3vw,28px);
+  line-height:1.5;color:var(--text);margin-bottom:48px;max-width:640px;}
+.how-intro strong{color:var(--accent-text);font-weight:500}
+
+.steps-editorial{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.step-ed{padding:28px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.step-ed:nth-child(2n){border-right:none}
+.step-ed:nth-child(3),.step-ed:nth-child(4){border-bottom:none}
+.step-num{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:12px;display:block;}
+.step-ed h3{font-family:var(--sans);font-weight:600;font-size:15px;color:var(--text);margin-bottom:8px;}
+.step-ed p{font-size:12px;color:var(--text2);line-height:1.75;font-weight:300;}
+
+/* ── FEATURES — editorial ── */
+.features-intro{font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:40px;font-weight:300;max-width:600px;}
+.features-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.feature-row{display:grid;grid-template-columns:180px 1fr;border-bottom:1px solid var(--border);}
+.feature-row:last-child{border-bottom:none}
+.feat-key{padding:20px 24px;border-right:1px solid var(--border);font-size:11px;
+  color:var(--text3);letter-spacing:.06em;display:flex;align-items:flex-start;
+  padding-top:22px;line-height:1.5;}
+.feat-val{padding:20px 24px;}
+.feat-val h3{font-family:var(--sans);font-weight:600;font-size:14px;color:var(--text);margin-bottom:6px;}
+.feat-val p{font-size:12px;color:var(--text2);line-height:1.75;font-weight:300;}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:32px 40px;max-width:860px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.footer-logo{font-family:var(--sans);font-weight:800;font-size:14px;color:var(--accent)}
+.footer-links{display:flex;gap:20px;}
+.footer-links a{font-size:11px;color:var(--text3);text-decoration:none;transition:color .15s;letter-spacing:.03em}
+.footer-links a:hover{color:var(--text2)}
+.footer-copy{font-size:11px;color:var(--text3)}
+
+@media(max-width:700px){
+  nav .nav-links{display:none}
+  .steps-editorial{grid-template-columns:1fr}
+  .step-ed{border-right:none}
+  .step-ed:nth-child(3){border-bottom:1px solid var(--border)}
+  .feature-row{grid-template-columns:1fr}
+  .feat-key{border-right:none;border-bottom:1px solid var(--border);padding-bottom:8px}
+  .hero-stats{flex-wrap:wrap}
+  .hero-stat{border-right:none;border-bottom:1px solid var(--border);flex:1;min-width:120px}
+  .hero-stat:last-child{border-bottom:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">PreFlight</a>
+  <div class="nav-links">
+    <a href="#how-it-works">How it works</a>
+    <a href="#features">Features</a>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" onclick="toggleTheme()">◐</button>
+    <a class="nav-cta" href="simulator.html">Open simulator</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">Design before you build</div>
+  <h1>Simulate your<br/><em>LLM pipeline</em><br/>before you create</h1>
+  <p class="hero-sub">
+    Drop nodes, wire them together, and see latency, throughput and cost estimates — before writing a single line of code.
+  </p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="simulator.html">Open simulator</a>
+    <a class="btn-ghost" href="#how-it-works">How it works</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-num">25+</div><div class="hero-stat-label">Models</div></div>
+    <div class="hero-stat"><div class="hero-stat-num">p99</div><div class="hero-stat-label">Latency model</div></div>
+    <div class="hero-stat"><div class="hero-stat-num">&lt;1s</div><div class="hero-stat-label">Sim time</div></div>
+    <div class="hero-stat"><div class="hero-stat-num">free</div><div class="hero-stat-label">To use</div></div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<div class="content" id="how-it-works">
+  <span class="how-label">How it works</span>
+  <p class="how-intro">
+    Most architecture decisions happen in a <strong>conversation or a drawing</strong>.
+    PreFlight adds numbers to that conversation — so you know whether your design will hold
+    before you build it.
+  </p>
+  <div class="steps-editorial">
+    <div class="step-ed">
+      <span class="step-num">01 — Compose</span>
+      <h3>Drag your pipeline</h3>
+      <p>Pick from retrieval nodes, 25+ real LLM models, deployment platforms, and custom components. Place them on the canvas.</p>
+    </div>
+    <div class="step-ed">
+      <span class="step-num">02 — Connect</span>
+      <h3>Wire the graph</h3>
+      <p>Drag from output ports to input ports to define the flow. Each connection is reflected immediately in the simulation.</p>
+    </div>
+    <div class="step-ed">
+      <span class="step-num">03 — Analyse</span>
+      <h3>Read the forecast</h3>
+      <p>p50–p99 latency, throughput ceiling, cost per request, and a bottleneck analysis with specific fix suggestions.</p>
+    </div>
+    <div class="step-ed">
+      <span class="step-num">04 — Iterate</span>
+      <h3>Change anything</h3>
+      <p>Swap models, add caches, change platforms. Every edit recalculates instantly. Export the result as PNG or JSON.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<div class="content" id="features">
+  <span class="how-label">Features</span>
+  <p class="features-intro">
+    PreFlight is a single-file tool — no account, no installation, no backend.
+    Open it, design your pipeline, and share the file.
+  </p>
+  <div class="features-list">
+    <div class="feature-row">
+      <div class="feat-key">Latency model</div>
+      <div class="feat-val">
+        <h3>p50 through p99, per node</h3>
+        <p>Uses log-normal distribution modeling between your p50 and p95 inputs to estimate any percentile. Toggle which percentiles appear in the stats panel. Click any node to see its individual contribution to total latency.</p>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feat-key">Model library</div>
+      <div class="feat-val">
+        <h3>25+ real models with actual pricing</h3>
+        <p>GPT-4o, Gemini 2.5, Claude, Llama, Mistral, DeepSeek and more — each pre-loaded with published latency, context window size, and cost per million tokens. Search by name or provider.</p>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feat-key">Deployment</div>
+      <div class="feat-val">
+        <h3>Cold-start penalties modeled</h3>
+        <p>Vercel, AWS Lambda, Cloudflare Workers, Railway, Fly.io, and Cloud Run — each with realistic warm and cold-start latency. The p95 gap between warm and cold is often the most surprising number in a pipeline design.</p>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feat-key">Bottleneck analysis</div>
+      <div class="feat-val">
+        <h3>Specific fixes, not generic warnings</h3>
+        <p>When a node is the throughput ceiling, PreFlight explains why, quantifies the impact, and gives three concrete steps to resolve it — tailored to that specific node type.</p>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feat-key">Editable nodes</div>
+      <div class="feat-val">
+        <h3>Override any default with your real numbers</h3>
+        <p>Sidebar defaults can be changed globally for a node type. Individual canvas nodes can be overridden per-instance. Custom nodes let you model any component with your own p50, p95, tps, and cost.</p>
+      </div>
+    </div>
+    <div class="feature-row">
+      <div class="feat-key">Export</div>
+      <div class="feat-val">
+        <h3>PNG screenshot · JSON save/load</h3>
+        <p>Export your pipeline as a PNG to drop into a design doc or share on Slack. Export as JSON to save your work or share with a colleague. Import JSON to pick up where you left off.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<footer>
+  <div class="footer-logo">PreFlight</div>
+  <div class="footer-links">
+    <a href="simulator.html">Simulator</a>
+  </div>
+</footer>
+
+<script>
+function toggleTheme(){
+  const t=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('pf_theme',t);
+}
+(function(){const t=localStorage.getItem('pf_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+</script>
+</body>
+</html>
