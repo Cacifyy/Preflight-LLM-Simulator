@@ -280,17 +280,17 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
     <div class="sidebar-panel active" id="tab-nodes">
       <div class="sidebar-section">
         <div class="sidebar-label">Retrieval</div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'vector_db')">
           <div class="chip-dot" style="background:var(--c-retrieval)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Vector DB</span><span class="chip-lat" id="clat_vector_db">p50 40ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'vector_db')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'reranker')">
           <div class="chip-dot" style="background:var(--c-retrieval)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Reranker</span><span class="chip-lat" id="clat_reranker">p50 80ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'reranker')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'cache')">
           <div class="chip-dot" style="background:var(--c-retrieval)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Cache</span><span class="chip-lat" id="clat_cache">p50 2ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'cache')">✎</span>
@@ -298,17 +298,17 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Logic</div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'embed')">
           <div class="chip-dot" style="background:var(--c-logic)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Embedder</span><span class="chip-lat" id="clat_embed">p50 20ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'embed')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'router')">
           <div class="chip-dot" style="background:var(--c-logic)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Router</span><span class="chip-lat" id="clat_router">p50 5ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'router')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'guardrail')">
           <div class="chip-dot" style="background:var(--c-logic)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Guardrail</span><span class="chip-lat" id="clat_guardrail">p50 60ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'guardrail')">✎</span>
@@ -333,17 +333,17 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
     <div class="sidebar-panel" id="tab-infra">
       <div class="sidebar-section">
         <div class="sidebar-label">Serverless</div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'vercel')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Vercel</span><span class="chip-lat" id="clat_vercel">cold ~800ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'vercel')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'aws_lambda')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">AWS Lambda</span><span class="chip-lat" id="clat_aws_lambda">cold ~500ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'aws_lambda')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'cf_workers')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">CF Workers</span><span class="chip-lat" id="clat_cf_workers">cold ~5ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'cf_workers')">✎</span>
@@ -351,17 +351,17 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Containers</div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'railway')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Railway</span><span class="chip-lat" id="clat_railway">warm ~2ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'railway')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'fly_io')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Fly.io</span><span class="chip-lat" id="clat_fly_io">warm ~3ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'fly_io')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'gcp_run')">
           <div class="chip-dot" style="background:var(--c-infra)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Cloud Run</span><span class="chip-lat" id="clat_gcp_run">cold ~2s</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'gcp_run')">✎</span>
@@ -369,12 +369,12 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
       </div>
       <div class="sidebar-section" style="border-bottom:none">
         <div class="sidebar-label">Databases</div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'postgres')">
           <div class="chip-dot" style="background:var(--c-database)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Postgres</span><span class="chip-lat" id="clat_postgres">p50 5ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'postgres')">✎</span>
         </div>
-        <div class="node-chip">
+        <div class="node-chip" draggable="true" ondragstart="startDrag(event,'redis')">
           <div class="chip-dot" style="background:var(--c-database)"></div>
           <div style="flex:1;min-width:0"><span class="chip-name">Redis</span><span class="chip-lat" id="clat_redis">p50 1ms</span></div>
           <span class="chip-edit" onclick="openEditChip(event,'redis')">✎</span>
@@ -385,6 +385,8 @@ svg.edges-svg{position:absolute;inset:0;pointer-events:none;overflow:visible;}
 
   <!-- CANVAS -->
   <div class="canvas-wrap" id="canvasWrap"
+    ondragover="event.preventDefault()" ondrop="dropNode(event)"
+    oncontextmenu="event.preventDefault()"
     onwheel="onWheel(event)" onmousedown="onCanvasMouseDown(event)">
     <div class="canvas-bg" id="canvasBg"></div>
     <div class="canvas-transform" id="canvasTransform">
@@ -668,7 +670,7 @@ function renderCustomChips(){
   const c=document.getElementById('customChips');c.innerHTML='';
   Object.entries(customTypes).forEach(([key,def])=>{
     const d=document.createElement('div');d.style.position='relative';
-    const chip=document.createElement('div');chip.className='node-chip';
+    const chip=document.createElement('div');chip.className='node-chip';chip.draggable=true;chip.ondragstart=e=>startDrag(e,key);
     chip.innerHTML=`<div class="chip-dot" style="background:var(--c-custom)"></div>
       <div style="flex:1;min-width:0"><span class="chip-name">${def.name}</span><span class="chip-lat">p50 ${def.p50}ms</span></div>
       <span class="chip-edit" onclick="openEditCustomChip(event,'${key}')">✎</span>
@@ -682,6 +684,16 @@ function deleteCustom(key){
 }
 
 // ── RIGHT-CLICK NODE PLACEMENT ────────────────────────────────────────────────
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+function startDrag(e,type){dragging=type;e.dataTransfer.effectAllowed='copy';}
+function dropNode(e){
+  if(!dragging)return;
+  const r=document.getElementById('canvasWrap').getBoundingClientRect();
+  const cx=(e.clientX-r.left-panX)/zoom;
+  const cy=(e.clientY-r.top-panY)/zoom;
+  addNode(dragging,cx-76,cy-26);
+  dragging=null;
+}
 function addNode(type,x,y){
   const def=getDef(type);if(!def)return;
   const id='n'+(++nc);
