@@ -749,15 +749,21 @@ function selectNode(id){
 function updateSelectedDisplay(){
   const sb=document.getElementById('statsBody');
   const sel=selectedId?nodes.find(n=>n.id===selectedId):null;
-  if(!sel)return;
+  let existingSelected=sb.querySelector('.selected-section');
+  
+  if(!sel){
+    if(existingSelected)existingSelected.remove();
+    return;
+  }
+  
   const pcts=[...activePcts].sort((a,b)=>a-b);
   const selRows=pcts.map(p=>`<div class="nd-row"><span class="nd-key">p${p}</span><span class="nd-val">${pctLat(sel.def.p50,sel.def.p95,p)}ms</span></div>`).join('');
-  const selectedHtml=`<div class="stat-group-title">Selected: ${sel.def.name}</div><div class="node-detail">${selRows}<div class="nd-row"><span class="nd-key">max tps</span><span class="nd-val">${sel.def.tps}</span></div><div class="nd-row"><span class="nd-key">cost/req</span><span class="nd-val">$${sel.def.cost}</span></div><div class="nd-row"><span class="nd-key">category</span><span class="nd-val">${sel.def.cat||'custom'}</span></div></div>`;
-  const existing=sb.querySelector('.node-detail');
-  if(existing){
-    existing.parentElement.replaceWith(new DOMParser().parseFromString(selectedHtml,'text/html').body.firstChild);
+  const selectedHtml=`<div class="selected-section"><div class="stat-group-title">Selected: ${sel.def.name}</div><div class="node-detail">${selRows}<div class="nd-row"><span class="nd-key">max tps</span><span class="nd-val">${sel.def.tps}</span></div><div class="nd-row"><span class="nd-key">cost/req</span><span class="nd-val">$${sel.def.cost}</span></div><div class="nd-row"><span class="nd-key">category</span><span class="nd-val">${sel.def.cat||'custom'}</span></div></div></div>`;
+  
+  if(existingSelected){
+    existingSelected.outerHTML=selectedHtml;
   }else{
-    sb.innerHTML+=selectedHtml;
+    sb.appendChild(new DOMParser().parseFromString(selectedHtml,'text/html').body.firstChild);
   }
 }
 
@@ -843,7 +849,7 @@ function buildBottleneckHTML(bottle,totalP95){
 function initPctSelector(){
   document.querySelectorAll('#pctSelector .pct-pill').forEach(pill=>{
     const p=parseInt(pill.dataset.p);pill.classList.toggle('active',activePcts.has(p));
-    pill.onclick=()=>{if(activePcts.has(p)){if(activePcts.size<=1)return;activePcts.delete(p);pill.classList.remove('active');}else{activePcts.add(p);pill.classList.add('active');}recalc();};
+    pill.onclick=()=>{if(activePcts.has(p)){if(activePcts.size<=1)return;activePcts.delete(p);pill.classList.remove('active');}else{activePcts.add(p);pill.classList.add('active');}recalc();updateSelectedDisplay();};
   });
 }
 function recalc(){
@@ -868,8 +874,7 @@ function recalc(){
     <div class="stat-row"><span class="stat-lbl">per 1k reqs</span><span class="stat-val">$${cost1k.toFixed(3)}</span></div>
     <div class="stat-row"><span class="stat-lbl">per 1M reqs</span><span class="stat-val" style="color:var(--text2)">$${(cost1k*1000).toFixed(1)}</span></div>
     <div class="stat-row"><span class="stat-lbl">per day @ ${minTps}tps</span><span class="stat-val" style="color:var(--text2)">$${(cost1k*minTps*86.4).toFixed(0)}</span></div>
-    ${buildBottleneckHTML(bottle,totalP95)}
-    ${sel?`<div class="stat-group-title">Selected: ${sel.def.name}</div><div class="node-detail">${selRows}<div class="nd-row"><span class="nd-key">max tps</span><span class="nd-val">${sel.def.tps}</span></div><div class="nd-row"><span class="nd-key">cost/req</span><span class="nd-val">$${sel.def.cost}</span></div><div class="nd-row"><span class="nd-key">category</span><span class="nd-val">${sel.def.cat||'custom'}</span></div></div>`:''}`;
+    ${buildBottleneckHTML(bottle,totalP95)}`;
 }
 
 // ── CANVAS CONTROLS ───────────────────────────────────────────────────────────
