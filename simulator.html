@@ -599,15 +599,29 @@ function onWheel(e){
   e.preventDefault();
   const wr=document.getElementById('canvasWrap').getBoundingClientRect();
   const mx=e.clientX-wr.left,my=e.clientY-wr.top;
-  const delta=e.deltaY<0?1.1:0.91;
-  const newZoom=Math.max(.2,Math.min(3,zoom*delta));
-  panX=mx-(mx-panX)*(newZoom/zoom);
-  panY=my-(my-panY)*(newZoom/zoom);
-  zoom=newZoom;
+  
+  // Normalize deltaY based on deltaMode (0=pixels, 1=lines, 2=pages)
+  // Trackpad uses deltaMode 0 with small precise values; mouse wheel uses larger values
+  let normalizedDelta = e.deltaY;
+  if (e.deltaMode === 1) normalizedDelta *= 40; // lines
+  else if (e.deltaMode === 2) normalizedDelta *= 800; // pages
+  
+  // Convert deltaY to zoom multiplier (inverted: negative = zoom in)
+  // Use exponential scaling for smooth trackpad and discrete wheel compatibility
+  const zoomFactor = Math.exp(-normalizedDelta * 0.001);
+  const newZoom = Math.max(.2, Math.min(3, zoom * zoomFactor));
+  
+  panX = mx - (mx - panX) * (newZoom / zoom);
+  panY = my - (my - panY) * (newZoom / zoom);
+  zoom = newZoom;
   applyTransform();
 }
 function onCanvasMouseDown(e){
-  if(e.button===2||e.button===1||(e.button===0&&spaceDown)){
+  // Check if clicking on a node - if so, don't pan
+  if(e.target.closest('.pnode')||e.target.closest('.node-chip')||e.target.closest('.port')||e.target.closest('.pnode-btn'))return;
+  
+  // Pan on: right-click, middle-click, space+left-click, or any left-click on empty canvas
+  if(e.button===0 || e.button===1 || e.button===2){
     e.preventDefault();isPanning=true;
     panStart={x:e.clientX-panX,y:e.clientY-panY};
     document.getElementById('canvasWrap').style.cursor='grabbing';
