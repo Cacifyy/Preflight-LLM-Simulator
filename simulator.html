@@ -700,7 +700,6 @@ function addNode(type,x,y){
   nodes.push({id,type,x:Math.max(8,x),y:Math.max(8,y),def:Object.assign({},def)});
   renderNode(nodes[nodes.length-1]);
   document.getElementById('emptyHint').style.display='none';
-  recalc();
 }
 
 function renderNode(n){
@@ -742,7 +741,25 @@ function refreshMetas(){
   const pp=[...activePcts].sort((a,b)=>a-b)[0]||50;
   nodes.forEach(n=>{const m=document.getElementById('pm_'+n.id);if(m)m.textContent=`p${pp} ${pctLat(n.def.p50,n.def.p95,pp)}ms · ${n.def.tps} tps`;});
 }
-function selectNode(id){selectedId=id;document.querySelectorAll('.pnode').forEach(el=>el.classList.toggle('selected',el.id===id));recalc();}
+function selectNode(id){
+  selectedId=id;
+  document.querySelectorAll('.pnode').forEach(el=>el.classList.toggle('selected',el.id===id));
+  updateSelectedDisplay();
+}
+function updateSelectedDisplay(){
+  const sb=document.getElementById('statsBody');
+  const sel=selectedId?nodes.find(n=>n.id===selectedId):null;
+  if(!sel)return;
+  const pcts=[...activePcts].sort((a,b)=>a-b);
+  const selRows=pcts.map(p=>`<div class="nd-row"><span class="nd-key">p${p}</span><span class="nd-val">${pctLat(sel.def.p50,sel.def.p95,p)}ms</span></div>`).join('');
+  const selectedHtml=`<div class="stat-group-title">Selected: ${sel.def.name}</div><div class="node-detail">${selRows}<div class="nd-row"><span class="nd-key">max tps</span><span class="nd-val">${sel.def.tps}</span></div><div class="nd-row"><span class="nd-key">cost/req</span><span class="nd-val">$${sel.def.cost}</span></div><div class="nd-row"><span class="nd-key">category</span><span class="nd-val">${sel.def.cat||'custom'}</span></div></div>`;
+  const existing=sb.querySelector('.node-detail');
+  if(existing){
+    existing.parentElement.replaceWith(new DOMParser().parseFromString(selectedHtml,'text/html').body.firstChild);
+  }else{
+    sb.innerHTML+=selectedHtml;
+  }
+}
 
 // ── EDGES ─────────────────────────────────────────────────────────────────────
 function startConnect(e,fromId){
@@ -764,7 +781,7 @@ function startConnect(e,fromId){
 }
 function endConnect(e,toId){
   e.stopPropagation();if(!connectFrom||connectFrom===toId)return;
-  if(!edges.find(ed=>ed.from===connectFrom&&ed.to===toId)){edges.push({from:connectFrom,to:toId});drawEdges();recalc();}
+  if(!edges.find(ed=>ed.from===connectFrom&&ed.to===toId)){edges.push({from:connectFrom,to:toId});drawEdges();}
 }
 function bz(x1,y1,x2,y2){const d=Math.abs(x2-x1)*.55;return `M${x1},${y1} C${x1+d},${y1} ${x2-d},${y2} ${x2},${y2}`;}
 function portPos(nid,side){
@@ -789,7 +806,7 @@ function drawEdges(){
 }
 function removeNode(id){
   nodes=nodes.filter(n=>n.id!==id);edges=edges.filter(e=>e.from!==id&&e.to!==id);
-  document.getElementById(id)?.remove();drawEdges();recalc();
+  document.getElementById(id)?.remove();drawEdges();
   if(nodes.length===0)document.getElementById('emptyHint').style.display='flex';
 }
 
@@ -860,7 +877,7 @@ function clearCanvas(){
   nodes=[];edges=[];nc=0;selectedId=null;
   document.getElementById('canvasNodes').innerHTML='';
   document.getElementById('edgesSvg').querySelectorAll('.edge').forEach(e=>e.remove());
-  document.getElementById('emptyHint').style.display='flex';recalc();
+  document.getElementById('emptyHint').style.display='flex';
 }
 
 function loadExample(){
@@ -930,7 +947,7 @@ function importJSON(e){
       });
       edges=[...(data.edges||[])];
       document.getElementById('emptyHint').style.display=nodes.length?'none':'flex';
-      setTimeout(()=>{drawEdges();recalc();fitView();},60);
+      setTimeout(()=>{drawEdges();fitView();},60);
     }catch(err){alert('Could not import: '+err.message);}
   };
   reader.readAsText(file);
@@ -1001,7 +1018,7 @@ function saveModal(){
   if(isNaN(cost)||cost<0){err.textContent='Cost must be 0 or greater.';return;}
   const patch={name,color:selColor,p50:Math.round(p50),p95:Math.round(p95),tps:Math.round(tps),cost};
   if(mMode==='chip'){chipOverrides[mTarget]=patch;saveOverrides();const l=document.getElementById('clat_'+mTarget);if(l)l.textContent='p50 '+patch.p50+'ms';}
-  else if(mMode==='node'){const n=nodes.find(n=>n.id===mTarget);if(n){Object.assign(n.def,patch);const el=document.getElementById(n.id);if(el){el.querySelector('.pnode-cat-bar').style.background=patch.color;el.querySelector('.pnode-name').textContent=patch.name;}recalc();}}
+  else if(mMode==='node'){const n=nodes.find(n=>n.id===mTarget);if(n){Object.assign(n.def,patch);const el=document.getElementById(n.id);if(el){el.querySelector('.pnode-cat-bar').style.background=patch.color;el.querySelector('.pnode-name').textContent=patch.name;}}}
   else if(mMode==='create'){const key='custom_'+Date.now();customTypes[key]=Object.assign({},patch,{cat:'custom',fix:{problem:`${name} at {tps} tps is your current bottleneck.`,impact:'Update the p50/p95 values with your observed production metrics for accurate analysis.',steps:['Click ✎ on this node to enter your measured p50 and p95 latency values','Set tps to your component\'s tested maximum throughput','Update cost to your actual per-request pricing']}});saveCustom();renderCustomChips();}
   else if(mMode==='custom'){Object.assign(customTypes[mTarget],patch);saveCustom();renderCustomChips();}
   closeModal();
